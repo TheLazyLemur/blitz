@@ -1,27 +1,10 @@
 package protocol
 
-type Command struct {
-	Command string
-	Key     string
-	Value   string
-}
+var (
+	Separator = []byte{'\r', '\n', '\r', '\n'}
+)
 
-func NewCommand(c, k, v string) Command {
-	return Command{
-		Command: c,
-		Key:     k,
-		Value:   v,
-	}
-}
-
-type Response struct {
-	StatusCode int32
-	Value      string
-}
-
-func NewResult(statusCode int32, value []byte) Response {
-	return Response{
-		StatusCode: statusCode,
-		Value:      string(value),
-	}
+type BaseMessage struct {
+	Method  string `json:"method"`
+	JsonRPC string `json:"jsonrpc"`
 }

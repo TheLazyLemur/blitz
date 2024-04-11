@@ -3,18 +3,15 @@ package ops
 import (
 	"fmt"
 
-	"github.com/TheLazyLemur/blitz/protocol"
+	"github.com/TheLazyLemur/blitz/server/store"
 )
 
-var (
-    db = make(map[string][]byte)
-)
-
-func HandleSet(command protocol.Command) {
-    db[command.Key] = []byte(command.Value)
-    fmt.Println(len(db))
+func Set(s store.Storer, k, v string) error {
+    fmt.Println("SET", k, v)
+    return s.Set(k, v)
 }
 
-func HandleGet(command protocol.Command) []byte {
-    return db[command.Key]
+func Get(s store.Storer, k string) (string, error) {
+    fmt.Println("GET", k)
+    return s.Get(k)
 }

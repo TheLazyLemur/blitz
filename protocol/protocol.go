@@ -2,84 +2,57 @@ package protocol
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/json"
-	"io"
-	"log/slog"
+	"errors"
+	"fmt"
+	"strconv"
 )
 
-func ParseRequest(r io.Reader) (Command, error) {
-	var keyLen int32
-	if err := binary.Read(r, binary.LittleEndian, &keyLen); err != nil {
-		if err == io.EOF {
-			slog.Info("Connection closed by client")
-		}
-		return Command{}, err
+func EncodeMessage(msg any) (string, error) {
+	content, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
 	}
 
-	cmdBytes := make([]byte, keyLen)
-	if err := binary.Read(r, binary.LittleEndian, &cmdBytes); err != nil {
-		return Command{}, err
-	}
-
-	request := &Command{}
-	if err := json.Unmarshal(cmdBytes, request); err != nil {
-		slog.Error("failed to unmarshal json", "error", err.Error())
-		return Command{}, err
-	}
-
-	return *request, nil
+	return fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(content), content), nil
 }
 
-
-func SendCommand(w io.Writer, cmd Command) error {
-	buf := new(bytes.Buffer)
-
-	bytes, _ := json.Marshal(cmd)
-	str := string(bytes)
-
-	keyLen := int32(len(str))
-	if err := binary.Write(buf, binary.LittleEndian, keyLen); err != nil {
-		return err
+func ScanLines(data []byte, _ bool) (advance int, token []byte, err error) {
+	header, content, found := bytes.Cut(data, Separator)
+	if !found {
+		return 0, nil, nil
 	}
 
-	if err := binary.Write(buf, binary.LittleEndian, []byte(str)); err != nil {
-		return err
+	contentLengthBytes := header[len("Content-Length: "):]
+	contentLength, err := strconv.Atoi(string(contentLengthBytes))
+	if err != nil {
+		return 0, nil, err
 	}
 
-	_, err := w.Write(buf.Bytes())
-	return err
+	if len(content) < contentLength {
+		return 0, nil, nil
+	}
+
+	totalLength := len(header) + len(Separator) + contentLength
+	return totalLength, data[:totalLength], nil
 }
 
-func ReadResponse(r io.Reader) (Response, error) {
-	var kLen int32
-	if err := binary.Read(r, binary.LittleEndian, &kLen); err != nil {
-		return Response{}, err
+func DecodeMessage(msg []byte) (string, []byte, error) {
+	header, content, found := bytes.Cut(msg, Separator)
+	if !found {
+		return "", nil, errors.New("Did not find separator")
 	}
 
-	cmdBytes := make([]byte, kLen)
-	if err := binary.Read(r, binary.LittleEndian, &cmdBytes); err != nil {
-		return Response{}, err
+	contentLengthBytes := header[len("Content-Length: "):]
+	contentLength, err := strconv.Atoi(string(contentLengthBytes))
+	if err != nil {
+		return "", nil, err
 	}
 
-	result := new(Response)
-	_ = json.Unmarshal(cmdBytes, result)
-	return *result, nil
-}
-
-func SendResponse(w io.Writer, result Response) {
-	resultJson, _ := json.Marshal(result)
-	resLen := len(resultJson)
-
-	if err := binary.Write(w, binary.LittleEndian, int32(resLen)); err != nil {
-		if err == io.EOF {
-			slog.Info("Connection closed by client")
-		}
+	var baseMessage BaseMessage
+	if err := json.Unmarshal(content[:contentLength], &baseMessage); err != nil {
+		return "", nil, err
 	}
 
-	if err := binary.Write(w, binary.LittleEndian, resultJson); err != nil {
-		if err == io.EOF {
-			slog.Info("Connection closed by client")
-		}
-	}
+	return baseMessage.Method, content[:contentLength], nil
 }
