@@ -5,17 +5,19 @@ import (
 	"io"
 )
 
-func handleSet(_ io.Reader, w io.Writer) error {
+type handlers struct{}
+
+func (h *handlers) handleSet(_ io.Reader, w io.Writer) error {
 	if err := binary.Write(w, binary.LittleEndian, Ok); err != nil {
-		return handleError(ErrInvalidCommand)
+		return handleError(err)
 	}
 
 	return nil
 }
 
-func handleGet(_ io.Reader, w io.Writer) error {
+func (h *handlers) handleGet(_ io.Reader, w io.Writer) error {
 	if err := binary.Write(w, binary.LittleEndian, Ok); err != nil {
-		return handleError(ErrInvalidCommand)
+		return handleError(err)
 	}
 
 	return nil

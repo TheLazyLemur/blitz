@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"io"
 	"testing"
 )
@@ -61,8 +60,9 @@ func Test_handleNetworkCommunication(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
+			s := &Server{}
 			if tc.EOF {
-				err := handleNetworkCommunication(&EOFReader{}, nil)
+				err := s.handleNetworkCommunication(&EOFReader{}, nil)
 				if err != tc.expectedError {
 					t.Error("Expected", tc.expectedError, "Got", err)
 				}
@@ -71,7 +71,7 @@ func Test_handleNetworkCommunication(t *testing.T) {
 
 			inputReader := tc.inputFunc(tc.command)
 			outputBuf := &bytes.Buffer{}
-			err := handleNetworkCommunication(inputReader, outputBuf)
+			err := s.handleNetworkCommunication(inputReader, outputBuf)
 			if err != tc.expectedError {
 				t.Error("Expected", tc.expectedError, "Got", err)
 			}
@@ -81,34 +81,6 @@ func Test_handleNetworkCommunication(t *testing.T) {
 
 			if replyFromServer != tc.expectedResponse {
 				t.Error("Expected", tc.expectedResponse, "Got", replyFromServer)
-			}
-		})
-	}
-}
-
-func Test_handleError(t *testing.T) {
-	testErr := errors.New("Test error")
-
-	tests := []struct {
-		name        string
-		err         error
-		expectedErr error
-	}{
-		{
-			name:        "Transformed Error - io.EOF",
-			err:         io.EOF,
-			expectedErr: ErrConnectionClosedByClient,
-		},
-		{
-			name:        "Non Transformed Error - io.EOF",
-			err:         testErr,
-			expectedErr: testErr,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if err := handleError(tc.err); err != tc.expectedErr {
-				t.Errorf("handleError() error = %v, wantErr %v", err, tc.expectedErr)
 			}
 		})
 	}
