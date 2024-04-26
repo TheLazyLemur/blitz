@@ -64,7 +64,9 @@ func (s *Server) handleNetworkCommunication(r io.Reader, w io.Writer) error {
 			return handleError(err)
 		}
 	default:
-		_ = binary.Write(w, binary.LittleEndian, InvalidCommand)
+		if err := binary.Write(w, binary.LittleEndian, InvalidCommand); err != nil {
+			return handleError(err)
+		}
 		return handleError(ErrInvalidCommand)
 	}
 

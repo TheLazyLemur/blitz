@@ -16,6 +16,13 @@ func (r *EOFReader) Read(p []byte) (n int, err error) {
 func sampleClientInput(c Command) *bytes.Reader {
 	inputBuf := &bytes.Buffer{}
 	binary.Write(inputBuf, binary.LittleEndian, c)
+
+	msg := "hello<|>world<|>69420"
+	msgLen := int32(len([]byte(msg)))
+
+	binary.Write(inputBuf, binary.LittleEndian, msgLen)
+	binary.Write(inputBuf, binary.LittleEndian, []byte(msg))
+
 	return bytes.NewReader(inputBuf.Bytes())
 }
 
