@@ -11,19 +11,23 @@ import (
 type Server struct {
 	listenAddrr string
 	ln          net.Listener
+	hnds        Handlers
 }
 
-func NewServer(listenAddrr string) *Server {
+func NewServer(listenAddrr string, hnds Handlers) *Server {
 	ln, err := net.Listen("tcp", port)
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 
-	return &Server{
+	s := &Server{
 		listenAddrr: listenAddrr,
 		ln:          ln,
+		hnds:        hnds,
 	}
+
+	return s
 }
 
 func (s *Server) StartServer() error {
@@ -52,11 +56,11 @@ func (s *Server) handleNetworkCommunication(r io.Reader, w io.Writer) error {
 
 	switch command {
 	case Set:
-		if err := hnds.handleSet(r, w); err != nil {
+		if err := s.hnds.HandleSet(r, w); err != nil {
 			return handleError(err)
 		}
 	case Get:
-		if err := hnds.handleGet(r, w); err != nil {
+		if err := s.hnds.HandleGet(r, w); err != nil {
 			return handleError(err)
 		}
 	default:

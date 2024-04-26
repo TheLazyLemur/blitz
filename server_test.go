@@ -60,7 +60,9 @@ func Test_handleNetworkCommunication(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			s := &Server{}
+			s := &Server{
+				hnds: &handlersImpl{},
+			}
 			if tc.EOF {
 				err := s.handleNetworkCommunication(&EOFReader{}, nil)
 				if err != tc.expectedError {

@@ -6,12 +6,11 @@ import (
 
 var (
 	port = ":8080"
-	hnds *handlers
 )
 
 func main() {
-	hnds = &handlers{}
+	hnds := &handlersImpl{}
 
-	s := NewServer(port)
+	s := NewServer(port, hnds)
 	log.Fatal(s.StartServer())
 }

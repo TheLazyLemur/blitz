@@ -5,9 +5,14 @@ import (
 	"io"
 )
 
-type handlers struct{}
+type Handlers interface {
+	HandleSet(io.Reader, io.Writer) error
+	HandleGet(io.Reader, io.Writer) error
+}
 
-func (h *handlers) handleSet(_ io.Reader, w io.Writer) error {
+type handlersImpl struct{}
+
+func (h *handlersImpl) HandleSet(_ io.Reader, w io.Writer) error {
 	if err := binary.Write(w, binary.LittleEndian, Ok); err != nil {
 		return handleError(err)
 	}
@@ -15,7 +20,7 @@ func (h *handlers) handleSet(_ io.Reader, w io.Writer) error {
 	return nil
 }
 
-func (h *handlers) handleGet(_ io.Reader, w io.Writer) error {
+func (h *handlersImpl) HandleGet(_ io.Reader, w io.Writer) error {
 	if err := binary.Write(w, binary.LittleEndian, Ok); err != nil {
 		return handleError(err)
 	}
